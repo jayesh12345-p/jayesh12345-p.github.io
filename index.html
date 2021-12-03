@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mazev1</title>
+    <style>
+        p {
+            text-align: center;
+            margin-top: 10px;
+            font-weight: 800;
+        }
+        
+        .fl {
+            float: left;
+        }
+        
+        .maze {
+            border-width: 5px 5px 5px 5px;
+            border-color: brown;
+            margin-left: 100px;
+            margin-top: 10px;
+            border-style: solid;
+            display: inline-block;
+        }
+        
+        .block {
+            position: relative;
+            width: 40px;
+            height: 40px;
+            background: chartreuse;
+        }
+        
+        .wl {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background-color: transparent;
+        }
+        
+        .wt {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 5px;
+            background-color: transparent;
+        }
+        
+        .row .left {
+            background-color: blue;
+        }
+        
+        .row .top {
+            background-color: blue;
+        }
+        
+        .btn1 {
+            position: absolute;
+            left: 0px;
+            top: 5px;
+        }
+        
+        .btn2 {
+            position: absolute;
+            left: 30px;
+            top: 5px;
+        }
+    </style>
+    <script>
+        window.onload = function() {
+            var visited;
+            var marray = [];
+            var size = 5;
+            var time = 90;
+            var countd;
+            var timer = document.getElementById("timer");
+            timer.innerText += " 1 min 30 second";
+            var x = 0;
+            var y = 0;
+            var pass = false;
+            var fail = false;
+            var sc = 7;
+            var sh = 3;
+            var eve;
+            var counting = false;
+            var startt = false;
+            var gene = false;
+            var hint = 1;
+            document.addEventListener('keydown', preventKeyBoardScroll, false);
+
+            function preventKeyBoardScroll(e) {
+                var keys = [17, 32, 33, 34, 35, 37, 38, 39, 40];
+                if (keys.includes(e.keyCode)) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+
+
+            function countdown() {
+
+                if (!pass) {
+
+                    if (time >= 1) {
+
+                        time--;
+                        var min = Math.floor(time / 60);
+                        var sec = Math.floor(time - min * 60);
+
+                        timer.innerText = "Time left: " + min + " min " + sec + " second";
+                        if (time <= 10) {
+                            timer.style.color = "red";
+                        }
+
+                    } else {
+
+                        alert("fail");
+                        btn1.innerText = "Start again";
+                        size = 5;
+                        time = 90;
+                        hint = 1;
+                        timer.innerText = "Time left:  1 min 30 second";
+                        clearInterval(countd);
+
+                    }
+
+                } else {
+
+                    clearInterval(countd);
+                }
+                // if (pass) {
+                //     time += size * size * 1000;
+                //     pass = false;
+                //     countdown(pass, time);
+                // }
+            }
+
+            function rewrite() {
+                var createm = document.getElementsByClassName("block");
+                for (var i = 0; i < createm.length; i++) {
+                    createm[i].getElementsByClassName("wl")[0].className = "wl";
+
+                    createm[i].getElementsByClassName("wt")[0].className = "wt";
+                }
+
+                for (var i = 0; i < createm.length; i++) {
+
+                    switch (marray[i]) {
+                        case 0:
+                            break;
+                        case 1:
+                            createm[i].getElementsByClassName("wl")[0].className += " left";
+                            break;
+                        case 2:
+                            createm[i].getElementsByClassName("wt")[0].className += " top";
+                            break;
+                        case 3:
+                            createm[i].getElementsByClassName("wl")[0].className += " left";
+                            createm[i].getElementsByClassName("wt")[0].className += " top";
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+            var btn1 = document.getElementById("btn1");
+            btn1.onclick = function()
+
+            // 4*4 
+            {
+
+                // idea：dfs方法，先设置左上角为起点，右下角终点，用dfs方法画出迷宫，然后随机寻找起点和终点。
+                //dfs方法：recursion， 当到达某个点的时候做判断，判断可走路线（direct反过来）里面没有经过的点， 使用math random选择方向，保存和更新direction。
+                // 然后用visited保存direction（从起点到终点的方向），0（没经过） 1，上，2下，3左 4右。如果该店是死路，往回走（visited的作用是地图，newmaze作用是保存墙的摆放）
+                // 该方法会经过地图所有点且不会出现重复，这样保证了迷宫答案的唯一性。
+
+                var title = document.getElementById("title");
+                title.innerText = "Welcome to the maze challenge " + " ( level " + (size - 4) + " ) " + " bonus : " + size * size + " seconds";
+
+                if (!gene) {
+                    gene = true;
+
+                }
+                if (gene) {
+                    btn1.innerText = "New Maze";
+                }
+                var count = 1;
+                var newmaze = [];
+                for (var i = 0; i < size * size; i++) {
+                    if (i == 0) {
+                        newmaze[0] = 0;
+                    } else if (0 < i & i < size) {
+
+                        newmaze[i] = 1;
+                    } else if (i % size == 0) {
+                        newmaze[i] = 2;
+                    } else newmaze[i] = 3;
+                }
+                // console.log(newmaze);
+                visited = [];
+                for (var i = 0; i < size * size; i++) {
+                    if (i < size * size - 1) {
+                        visited[i] = 0;
+                    } else
+                        visited[i] = size * size;
+                }
+                // create a flexible structure
+                var a = document.getElementById("maze");
+                a.parentNode.removeChild(a);
+                var y = document.createElement("div");
+                y.setAttribute("class", "maze");
+                y.setAttribute("id", "maze");
+                for (var i = 0; i < size; i++) {
+                    var b = document.createElement("div");
+                    b.setAttribute("class", "row");
+
+
+                    for (var l = 0; l < size; l++) {
+                        var c = document.createElement("div");
+                        c.setAttribute("class", "block fl");
+                        c.setAttribute("id", l + size * i);
+                        var g = document.createElement("div");
+                        g.setAttribute("class", "wl");
+                        var h = document.createElement("div");
+                        h.setAttribute("class", "wt");
+                        c.appendChild(g);
+                        c.appendChild(h);
+                        b.appendChild(c);
+                    }
+                    y.appendChild(b);
+
+                }
+                var z = document.getElementById("m");
+                z.appendChild(y);
+                // var newmaze = [
+                //     0, 1, 1, 1, 1,
+                //     2, 3, 3, 3, 3,
+                //     2, 3, 3, 3, 3,
+                //     2, 3, 3, 3, 3,
+                //     2, 3, 3, 3, 3,
+                // ];
+                // visited 记载前一个点坐标
+                // var visited = [
+                //     0, 0, 0, 0, 0,
+                //     0, 0, 0, 0,
+                //     0, 0, 0, 0,
+                //     0, 0, 0, 0,
+                //     0, 0, 0, 0,
+                //     0, 0, 0, size * size,
+
+                // ];
+                var node = size * size;
+
+                var choice = 0;
+
+                function hastop() {
+                    return !visited[node - size - 1];
+                }
+
+                function hasbottom() {
+                    return !visited[node + size - 1];
+                }
+
+                function hasleft() {
+                    return !visited[node - 2];
+                }
+
+                function hasright() {
+                    return !visited[node];
+                }
+                while (count <= size * size - 1) {
+                    var direction = "";
+                    var d = "";
+                    var x = (node - 1) % (size) + 1;
+                    var y = (node - x) / size + 1;
+                    choice = 0;
+
+                    // if (!visited[node]) {
+                    //     node = visited[node];
+                    // }
+                    // top=[node-4], left=[node-1], right=[node+1], bottom=[node+4]
+                    if (x > 1 & x < size) {
+                        // hasleftright
+
+                        if (y > 1 & y < size) {
+                            // hastopbottom
+                            if (hastop()) {
+                                choice++;
+                                direction += 1;
+                            }
+                            if (hasleft()) {
+                                choice++;
+                                direction += 2;
+                            }
+                            if (hasright()) {
+                                choice++;
+                                direction += 4;
+                            }
+                            if (hasbottom()) {
+                                choice++;
+                                direction += 3;
+                            }
+
+
+
+
+
+                        } else if (y == size) {
+                            //hastop
+                            if (hasleft()) {
+                                choice++;
+                                direction += 2;
+                            }
+                            if (hastop()) {
+                                choice++;
+                                direction += 1;
+                            }
+                            if (hasright()) {
+                                choice++;
+                                direction += 4;
+                            }
+
+
+                        } else if (y == 1) {
+                            //hasbottom
+                            if (hasleft()) {
+                                choice++;
+                                direction += 2;
+                            }
+                            if (hasright()) {
+                                choice++;
+                                direction += 4;
+                            }
+                            if (hasbottom()) {
+                                choice++;
+                                direction += 3;
+                            }
+
+                        }
+
+
+                    } else if (x == 1) {
+                        // hasright
+
+                        if (y > 1 & y < size) {
+                            if (hasright()) {
+                                choice++;
+                                direction += 4;
+                            }
+                            if (hastop()) {
+                                choice++;
+                                direction += 1;
+                            }
+                            if (hasbottom()) {
+                                choice++;
+                                direction += 3;
+                            }
+
+
+                        } else if (y == size) {
+                            if (hasright()) {
+                                choice++;
+                                direction += 4;
+                            }
+                            if (hastop()) {
+                                choice++;
+                                direction += 1;
+                            }
+
+                        } else if (y == 1) {
+                            if (hasbottom()) {
+                                choice++;
+                                direction += 3;
+                            }
+                            if (hasright()) {
+                                choice++;
+                                direction += 4;
+                            }
+
+                        }
+                    } else if (x == size) {
+                        // hasleft
+
+                        if (y > 1 & y < size) {
+                            if (hasleft()) {
+                                choice++;
+                                direction += 2;
+                            }
+                            if (hastop()) {
+                                choice++;
+                                direction += 1;
+                            }
+                            if (hasbottom()) {
+                                choice++;
+                                direction += 3;
+                            }
+
+                        } else if (y == size) {
+
+                            if (hasleft()) {
+                                choice++;
+                                direction += 2;
+                            }
+                            if (hastop()) {
+                                choice++;
+                                direction += 1;
+                            }
+
+                        } else if (y == 1) {
+                            if (hasleft()) {
+                                choice++;
+                                direction += 2;
+                            }
+                            if (hasbottom()) {
+                                choice++;
+                                direction += 3;
+                            }
+                        }
+
+                    }
+                    var res = Math.ceil(Math.random() * choice);
+
+                    if (res != 0) {
+                        d = direction[res - 1];
+                    } else {
+                        d = "6";
+                    }
+                    switch (d) {
+                        case ("1"):
+                            {
+                                // go to top
+                                // alert(count + "top");
+                                visited[node - size - 1] = node;
+
+                                newmaze[node - 1] = newmaze[node - 1] - 2;
+                                node -= size;
+                                break;
+                            }
+                        case ("2"):
+                            {
+                                //go to left
+                                // alert(count + "left");
+                                visited[node - 2] = node;
+
+                                newmaze[node - 1] = newmaze[node - 1] - 1;
+                                node -= 1;
+                                break;
+                            }
+                        case ("3"):
+                            {
+                                //go to bottom
+                                // alert(count + "bottom");
+                                visited[node + size - 1] = node;
+
+                                newmaze[node + size - 1] = newmaze[node + size - 1] - 2;
+                                node += size;
+                                break;
+                            }
+                        case ("4"):
+                            {
+                                //go to right
+                                // alert(count + "right");
+                                visited[node] = node;
+
+                                newmaze[node] = newmaze[node] - 1;
+                                node += 1;
+                                break;
+                            }
+                        default:
+                            {
+                                // Deadend,return to last node
+                                // alert(count + "end");
+                                node = visited[node - 1];
+                                choice = 0;
+                                continue;
+                            }
+                    }
+                    count++;
+
+
+                    // console.log(visited);
+                    // alert(choice);
+                    // alert("visit" + visited[node]);
+                    // alert("node" + node);
+                }
+
+                marray = newmaze;
+                rewrite();
+                if (pass) {
+                    pass = false;
+                    gene = true;
+                    time += size * size;
+                }
+                if (!counting) {
+                    counting = true;
+                    countd = setInterval(countdown, 1000);
+                }
+
+
+
+
+            }
+            // 玩家操作，键盘上下左右控制人物，到达起点立刻结束游戏,人物不可跨墙
+            btn2.onclick = function(event) {
+                if (pass) {
+                    alert("You need to click new level first");
+                    return false;
+                }
+                if (!gene) {
+                    alert("You need to click new level first");
+                    return false;
+                }
+                startt = true;
+                var maze = document.getElementById("maze");
+                var r = document.getElementById("start");
+                var z = document.getElementById("end");
+
+                if (r != null) {
+                    r.parentNode.removeChild(r);
+                }
+                if (z != null) {
+                    z.parentNode.removeChild(z);
+                }
+
+                x = 0;
+                y = 0;
+                var start = document.createElement("div");
+                start.setAttribute("id", "start");
+                start.style.position = "relative";
+                start.style.zIndex = "10";
+                start.style.top = y + "px";
+                start.style.left = x + "px";
+                start.style.height = "20px";
+                start.style.width = "20px";
+                start.style.background = "red";
+                maze.appendChild(start);
+                var dir = 0;
+                var end = document.createElement("div");
+                end.setAttribute("id", "end");
+                end.style.position = "relative";
+                end.style.zIndex = "10";
+                end.style.top = 40 * (size - 1) + "px";
+                end.style.left = 40 * size - 20 + "px";
+                end.style.height = "20px";
+                end.style.width = "20px";
+                end.style.background = "black";
+                maze.appendChild(end);
+                // alert(sc + "" + sh);
+
+                if (!(eve === undefined)) {
+                    document.removeEventListener("keydown", eve);
+
+                }
+
+                document.addEventListener('keydown', eve = function(event) {
+                    // if (event.ctrlKey) {
+                    //     sc = 20;
+                    //     sh = 5;
+                    // }
+                    dir = event.keyCode;
+                    document.addEventListener('keyup', function() {
+                        dir = 0;
+                    });
+                    //--------------------------------------------------------------------------------------------------------------------------------------
+                    setInterval(function() {
+                        if (dir == 37) {
+                            // left is press
+                            var speed;
+                            if (!event.repeat) {
+                                speed = sc;
+                            } else {
+                                speed = sh;
+                            }
+                            var o = Math.ceil((x - speed - 5) / 40);
+
+                            var m = Math.floor((y + 19) / 40);
+                            var l = Math.floor(y / 40);
+                            var index = o + l * size;
+                            var ind = o + m * size;
+                            if (x % 40 < speed) {
+
+                                if (o > 0 & (marray[index] == 0 | marray[index] == 2) & (marray[ind] == 0 | marray[ind] == 2)) {
+                                    if ((y % 40 > 20 || y % 40 < 5) & ((marray[ind - 1] == 2) || (marray[ind - 1] == 3))) {
+                                        x = Math.floor(x / 40) * 40;
+                                        dir = 0;
+                                    } else {
+
+                                        x -= speed;
+                                    }
+
+                                } else if (o > 0) {
+                                    x = Math.floor(x / 40) * 40 + 5;
+                                    dir = 0;
+
+                                } else if (o == 0) {
+                                    x = 0;
+                                }
+                            } else {
+
+                                if (((x - 5) % 40 < speed) & (marray[index] == 1 | marray[index] == 3) || (marray[ind] == 1 | marray[ind] == 3)) {
+                                    x = Math.floor(x / 40) * 40 + 5;
+                                    dir = 0;
+                                } else {
+                                    x -= speed;
+                                }
+                            }
+
+                            // if (event.repeat) {
+
+                            //     if (x % 40 <= sh) {
+                            //         // var t = Math.ceil((x + 5) / 40);
+                            //         var o = Math.ceil((x - sh) / 40);
+                            //         var m = Math.floor((y + 19) / 40);
+                            //         var l = Math.floor(y / 40);
+                            //         var index = o + l * size;
+                            //         var ind = o + m * size;
+                            //         if (o > 0 & (marray[index] == 0 | marray[index] == 2) & (marray[ind] == 0 | marray[ind] == 2)) {
+                            //             if ((y % 40 > 20 || y % 40 <= 5) & ((marray[ind - 1] == 2) || (marray[ind - 1] == 3))) {
+                            //                 x = Math.floor(x / 40) * 40;
+
+                            //             } else {
+
+                            //                 x -= sh;
+                            //             }
+                            //         } else if (o > 0) {
+
+                            //             x = Math.floor(x / 40) * 40 + 5;
+
+
+
+                            //         } else if (o == 0) {
+                            //             x = 0;
+                            //         }
+
+                            //         // } else {
+
+                            //         //     x = Math.floor(x / 40) * 40 + 5;
+                            //         // }
+                            //     } else {
+                            //         x -= sh;
+                            //     }
+                            // }
+                        } else if (dir == 39) {
+                            //right is pressed
+                            var speed;
+                            if (!event.repeat) {
+                                speed = sc;
+                            } else {
+                                speed = sh;
+                            }
+
+                            if ((x + 19) % 40 > 40 - speed - 1) {
+                                var o = Math.floor((x + 19) / 40);
+                                var l = Math.floor(y / 40);
+                                var m = Math.floor((y + 19) / 40);
+                                var index = o + l * size;
+                                var ind = o + m * size;
+
+                                if (o < size - 1 & (marray[index + 1] == 0 | marray[index + 1] == 2) & (marray[ind + 1] == 0 | marray[ind + 1] == 2)) {
+                                    if ((y % 40 > 20 || y % 40 < 5) & ((marray[ind + 1] == 2) || (marray[ind + 1] == 3))) {
+                                        x = Math.floor((x / 40) + 1) * 40 - 20;
+                                        dir = 0;
+                                    } else {
+                                        x += speed;
+                                    }
+
+                                } else {
+                                    x = Math.ceil((x + 20) / 40) * 40 - 20;
+                                    dir = 0;
+                                    // alert(x);
+                                    // alert("hit");
+                                }
+                            } else {
+                                x += speed;
+                            }
+
+
+                            // if (event.repeat) {
+                            //     if ((x + 20) % 40 <= sh) {
+                            //         var o = Math.floor(x / 40);
+                            //         // alert(x);
+                            //         var l = Math.floor(y / 40);
+                            //         var m = Math.floor((y + 19) / 40);
+                            //         var index = o + m * size;
+                            //         if (o < size - 1 & (marray[index + 1] == 0 | marray[index + 1] == 2) & (marray[ind + 1] == 0 | marray[ind + 1] == 2)) {
+                            //             if ((y % 40 > 20 || y % 40 < 5) & ((marray[ind + 1] == 2) || (marray[ind + 1] == 3))) {
+                            //                 x = Math.floor((x / 40) + 1) * 40 - 20;
+                            //             } else {
+                            //                 x += sh;
+                            //             }
+
+                            //         } else {
+
+                            //             // alert(x);
+
+
+
+                            //         }
+
+
+                            //     } else {
+                            //         x += sh;
+                            //     }
+
+                            // }
+
+                        } else if (dir == 38) {
+                            // top is press
+                            var speed;
+                            if (!event.repeat) {
+                                speed = sc;
+                            } else {
+                                speed = sh;
+                            }
+                            var o = Math.ceil((y - speed - 5) / 40);
+                            var m = Math.floor((x + 19) / 40);
+                            var l = Math.floor(x / 40);
+                            var index = o * size + l;
+                            var ind = o * size + m;
+                            if (y % 40 <= speed) {
+
+                                if (o > 0 & (marray[index] == 0 || marray[index] == 1) & (marray[ind] == 0 || marray[ind] == 1)) {
+                                    {
+                                        if ((x % 40 > 20 || x % 40 < 5) & ((marray[ind - size] == 1) || (marray[ind - size] == 3))) {
+                                            y = Math.floor(y / 40) * 40;
+                                            dir = 0;
+                                        } else {
+                                            y -= speed;
+                                        }
+                                    }
+                                } else if (o > 0) {
+                                    y = Math.floor(y / 40) * 40 + 5;
+                                    dir = 0;
+
+
+                                } else if (o == 0) {
+                                    y = 0;
+                                }
+                            } else {
+                                if (((y - 5) % 40 < speed) & (marray[index] == 2 | marray[index] == 3) || (marray[ind] == 2 | marray[ind] == 3)) {
+                                    y = Math.floor(y / 40) * 40 + 5;
+                                    dir = 0;
+                                } else {
+                                    y -= speed;
+                                }
+                            }
+                            // if (event.repeat) {
+                            //     if (y % 40 <= sh) {
+                            //         var o = Math.ceil((y - 1) / 40);
+                            //         var m = Math.floor((x + 19) / 40);
+                            //         var l = Math.floor(x / 40);
+                            //         var index = o * size + l;
+                            //         var ind = o * size + m;
+                            //         if (o > 0 & (marray[index] == 0 || marray[index] == 1) & (marray[ind] == 0 || marray[ind] == 1)) {
+
+                            //             if ((x % 40 > 20 || x % 40 < 5) & ((marray[ind - size] == 1) || (marray[ind - size] == 3))) {
+                            //                 y = Math.floor(y / 40) * 40;
+
+                            //             } else {
+                            //                 y -= sh;
+                            //             }
+                            //         } else if (o > 0) {
+
+
+                            //             y = Math.floor(y / 40) * 40 + 5;
+                            //         } else if (o == 0) {
+                            //             y = 0;
+                            //         }
+                            //     } else {
+                            //         y -= sh;
+                            //     }
+                            // }
+
+                        } else if (dir == 40) {
+                            //bottom is pressed
+                            var speed;
+                            if (!event.repeat) {
+                                speed = sc;
+                            } else {
+                                speed = sh;
+                            }
+                            if ((y + 19) % 40 > 40 - speed - 1) {
+                                var o = Math.floor((y + 19) / 40);
+                                var m = Math.floor((x + 19) / 40);
+                                var l = Math.floor(x / 40);
+                                var index = o * size + l;
+                                var ind = o * size + m;
+                                if (o < size - 1 & (marray[index + size] == 0 | marray[index + size] == 1) & (marray[ind + size] == 0 || marray[ind + size] == 1)) {
+                                    if ((x % 40 > 20 || x % 40 < 5) & ((marray[ind + size] == 1) || (marray[ind + size] == 3))) {
+                                        y = Math.floor(y / 40) * 40 + 20;
+                                        dir = 0;
+                                    } else {
+                                        y += speed;
+                                    }
+                                } else {
+                                    y = Math.ceil((y + 20) / 40) * 40 - 20;
+                                    dir = 0;
+
+                                }
+                            } else {
+                                y += speed;
+                            }
+
+                            //     if (event.repeat) {
+                            //         if ((y + 20) % 40 <= sh) {
+                            //             var o = Math.floor(y / 40);
+                            //             // alert(x);
+                            //             var m = Math.floor((x + 19) / 40);
+                            //             var l = Math.floor(x / 40);
+                            //             var index = o * size + l;
+                            //             var ind = o * size + m;
+                            //             if (o < size - 1 & (marray[index + size] == 0 | marray[index + size] == 1) & (marray[ind + size] == 0 || marray[ind + size] == 1)) {
+                            //                 if ((x % 40 > 20 || x % 40 < 5) & ((marray[ind + size] == 1) || (marray[ind + size] == 3))) {
+                            //                     y = Math.floor(y / 40) * 40 + 20;
+                            //                 } else {
+                            //                     y += sh;
+                            //                 }
+                            //             } else {
+
+
+
+
+                            //             }
+
+
+                            //         } else {
+                            //             y += sh;
+                            //         }
+
+                            //     }
+                        }
+
+                        start.style.top = y + "px";
+                        start.style.left = x + "px";
+                    }, 1000);
+                    console.log(x + "" + y);
+                    if (x >= 40 * size - 30 & y >= 40 * (size - 1) + 10) {
+                        dir = 0;
+                        alert("Congratulation!");
+                        x = 0;
+                        y = 0;
+                        startt = false;
+                        pass = true;
+                        counting = false;
+                        btn1.innerText = "New Level";
+                        document.removeEventListener("keydown", eve);
+                        if (size % 10 == 0) {
+                            hint++;
+                            var hin = document.getElementById("hint");
+                            hin.innerText = "Hint :" + hint;
+                        }
+
+                        if (size < 18) {
+                            size += 1;
+                        } else {
+                            alert("You pass the maze challenging");
+                            size = 5;
+                            btn1.innerText = "New game";
+                        }
+                    }
+
+                    //================================================================================-=
+                });
+            }
+
+
+
+            var btn3 = document.getElementById("btn3");
+            btn3.onclick = function() {
+                var index = 0;
+                if (!startt) {
+                    alert("Start the game first");
+                    return false;
+                }
+                if (hint >= 1) {
+                    hint--;
+                    var hin = document.getElementById("hint");
+                    hin.innerText = "Hint :" + hint;
+                    console.log(hint);
+                    while (index != size * size - 1) {
+                        var change = document.getElementById(index + "");
+                        change.style.background = "orange";
+
+                        index = visited[index] - 1;
+
+                    }
+                    var change = document.getElementById(index + "");
+                    change.style.background = "orange";
+                    console.log("done");
+
+                }
+            }
+
+        }
+    </script>
+</head>
+
+<body>
+    <p id="title">Welcome to the maze challenge.</p>
+    <p>Use the keyboard <kbd>up </kbd><kbd>down </kbd><kbd>left </kbd><kbd>right </kbd> to control the red box to hit the black box. Holding the key can make the move faster in a straight line. You can go to one direction at a time.</p>
+    <p id="timer">Time left:</p>
+    <p id="hint">Hint: 1</p>
+    <button type="button" id="btn1">Next Level</button>
+    <button type="button" id="btn2">start/restart</button>
+    <button type="button" id="btn3">solution</button>
+    <div id="m">
+        <div class="maze" id="maze">
+            <div id="start"></div>
+            <div class="row" id="row">
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+                <div class="block fl">
+                    <div class="wl"></div>
+                    <div class="wt"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
